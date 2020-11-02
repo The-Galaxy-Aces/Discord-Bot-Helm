@@ -1,0 +1,62 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "tga-discord-bot.fullname" . }}
+  labels:
+    {{- include "tga-discord-bot.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "tga-discord-bot.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "tga-discord-bot.selectorLabels" . | nindent 8 }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.livenessProbe }}
+          livenessProbe: {{- toYaml .Values.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.readinessProbe }}
+          readinessProbe: {{- toYaml .Values.readinessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.resources }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          command: ["/bin/sh"]
+          args: ["-ec", "sleep 20; tmux new-session -d -s tga-bot-cli 'cd /TGA-Bot/ && python3 main.py'; while true; do sleep 10; done;"]
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+          - mountPath: /TGA-Bot/config.yaml
+            subPath: config.yaml
+            name: config
+          - mountPath: {{ .Values.music.local.local_path }}
+            name: music
+          - mountPath: /var/log/discord_bot
+            name: logs
+          - mountPath: /tmp
+            name: tmux-temp
+      volumes:
+        - name: config
+          configMap:
+            name: {{ printf "%s-%s" .Release.Name "config" }}
+        {{- if .Values.music.local.host_mount.enabled }}
+        - name: music
+          hostPath:
+            path:  {{ .Values.music.local.host_mount.path }}
+            type: Directory
+        {{- end }}
+        - name: logs
+          emptyDir: {}
+        - name: tmux-temp
+          emptyDir: {}
