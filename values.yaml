@@ -1,0 +1,58 @@
+# Default values for The Galaxy Aces Discord Bot using Kubernetes and Helm.
+
+# This should be a good minimum for a single bot with music playback enabled.
+# Additional bots each run in their own thread and thus may require
+# an increase in the resources.
+resources:
+  limits:
+     cpu: 1000m
+     memory: 256Mi
+  requests:
+     cpu: 1000m
+     memory: 256Mi
+
+# Placeholder, will eventually be replaced with more proper probes
+livenessProbe:
+  exec:
+    command:
+    - ls
+    - /var/log/discord_bot
+  initialDelaySeconds: 20
+  periodSeconds: 20
+readinessProbe:
+  exec:
+    command:
+    - ls
+    - /var/log/discord_bot
+  initialDelaySeconds: 20
+  periodSeconds: 20
+
+replicaCount: 1
+
+image:
+  repository: thegalaxyaces/discord-bot
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podSecurityContext:
+  fsGroup: 2000
+
+securityContext:
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# Pod configuration for music feature
+# If local music is enabled, local_path should match your bot's config.yaml music local_path
+# If you want to use a k8s hostPath, then you need to ensure that your music is available on
+# all hosts which may run this pod and the host_mount.path should point to the host's music location 
+music:
+  local:
+    enabled: True
+    local_path: /music
+    host_mount:
+      enabled: True
+      path: /media/music
