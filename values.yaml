@@ -56,6 +56,3 @@ music:
     host_mount:
       enabled: True
       path: /media/music
-    
-    
-  
